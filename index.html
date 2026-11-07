@@ -35,8 +35,9 @@ input:focus{border-color:var(--cyan);box-shadow:0 0 12px rgba(0,240,255,.5);outl
 /* top bar */
 .topbar-fixed{position:fixed;top:env(safe-area-inset-top);left:0;right:0;z-index:30;display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 12px;pointer-events:none}
 .topbar-fixed>*{pointer-events:auto}
-.topbtn{font:700 1rem Rajdhani,sans-serif;letter-spacing:.04em;color:#001322;background:linear-gradient(135deg,var(--cyan),var(--blue));border:0;border-radius:999px;padding:10px 18px;cursor:pointer;box-shadow:0 0 18px rgba(0,240,255,.8),0 0 0 2px rgba(255,255,255,.25) inset;transition:transform .15s,box-shadow .15s}
-.topbtn:hover{transform:translateY(-2px);box-shadow:0 0 30px rgba(0,240,255,1)}
+.topbtn{font:900 1.05rem Rajdhani,sans-serif;letter-spacing:.06em;color:#00101f;background:linear-gradient(135deg,#7ff8ff,var(--cyan) 45%,#3d8bff);border:2px solid #fff;border-radius:999px;padding:11px 22px;cursor:pointer;box-shadow:0 0 14px #fff,0 0 30px var(--cyan),0 0 60px rgba(30,107,255,.9);animation:hot 1.6s ease-in-out infinite;transition:transform .15s}
+@keyframes hot{50%{box-shadow:0 0 22px #fff,0 0 50px var(--cyan),0 0 95px rgba(30,107,255,1);transform:scale(1.05)}}
+.topbtn:hover{animation-play-state:paused;transform:scale(1.08)}
 .madeby{margin-left:auto;font:900 .85rem Orbitron,sans-serif;letter-spacing:.08em;color:#fff;padding:8px 14px;border-radius:10px;background:rgba(10,30,80,.75);border:1px solid var(--cyan);text-shadow:0 0 10px var(--cyan);box-shadow:0 0 16px rgba(0,240,255,.6);animation:glow 2.4s ease-in-out infinite}
 @keyframes glow{50%{box-shadow:0 0 28px rgba(0,240,255,1)}}
 @media (max-width:420px){.topbtn{font-size:.9rem;padding:9px 14px}.madeby{font-size:.72rem;padding:7px 10px}}
@@ -53,8 +54,8 @@ input:focus{border-color:var(--cyan);box-shadow:0 0 12px rgba(0,240,255,.5);outl
 .frame img{display:block;width:100%;max-height:70vh;object-fit:contain;border-radius:18px;background:#030818}
 @keyframes drop{from{opacity:0;transform:perspective(600px) translateY(-40px) rotateX(60deg)}}
 @keyframes pop{from{opacity:0;transform:scale(.7)}}
-.back{display:inline-block;margin-top:28px;font-size:1.3rem;padding:16px 34px;animation:pulse 1.8s ease-in-out infinite}
-@keyframes pulse{50%{box-shadow:0 0 38px rgba(0,240,255,1),0 5px 0 #0a3d99}}
+.back{display:inline-block;margin-top:28px;font-size:1.45rem;font-weight:900;padding:18px 40px;border:2px solid #fff;background:linear-gradient(135deg,#7ff8ff,var(--cyan) 45%,#3d8bff);box-shadow:0 0 16px #fff,0 0 36px var(--cyan),0 0 70px rgba(30,107,255,.9),0 6px 0 #0a3d99;animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{50%{box-shadow:0 0 26px #fff,0 0 60px var(--cyan),0 0 110px rgba(30,107,255,1),0 6px 0 #0a3d99}}
 /* admin */
 #admin{max-width:980px;align-self:stretch;margin:0 auto;justify-content:flex-start}
 #login{max-width:420px}
@@ -79,7 +80,7 @@ input:focus{border-color:var(--cyan);box-shadow:0 0 12px rgba(0,240,255,.5);outl
 <body>
 <canvas id="fx"></canvas>
 <div class="topbar-fixed">
-  <button class="topbtn hidden" id="topBtn">⚡ Back to Main Website</button>
+  <button class="topbtn hidden" id="topBtn">← Back to Website</button>
   <div class="madeby">MADE BY ZAIN</div>
 </div>
 <main>
@@ -90,7 +91,7 @@ input:focus{border-color:var(--cyan);box-shadow:0 0 12px rgba(0,240,255,.5);outl
     <h1 class="inv-head">YOU ARE SPECIALLY INVITED!</h1>
     <div class="inv-name" id="invName"></div>
     <div class="frame"><img id="invImg" alt="Invitation card"></div>
-    <button class="btn back" id="backBtn">⚡ BACK TO WEBSITE</button>
+    <button class="btn back" id="backBtn">← BACK TO WEBSITE</button>
     <div class="msg bad" id="backErr"></div>
   </section>
 
