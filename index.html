@@ -13,9 +13,8 @@
 :root{--navy:#050b1f;--navy2:#0a1633;--blue:#1e6bff;--cyan:#00f0ff;--text:#e8f4ff;--mute:#8fa8c9;--bad:#ff4d6d;--ok:#2dffb0}
 *{box-sizing:border-box;margin:0}
 html,body{min-height:100%}
-body{background:radial-gradient(ellipse at 50% 0%,#0c2150 0%,var(--navy) 60%);color:var(--text);font-family:Rajdhani,system-ui,sans-serif;font-size:18px;line-height:1.4;overflow-x:hidden;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
-canvas#bolts,canvas#fx{position:fixed;inset:0;width:100%;height:100%;pointer-events:none}
-canvas#bolts{z-index:0}canvas#fx{z-index:50}
+body{background:radial-gradient(circle at 15% 10%,rgba(30,107,255,.38),transparent 45%),radial-gradient(circle at 88% 22%,rgba(0,240,255,.22),transparent 42%),radial-gradient(circle at 50% 100%,rgba(70,60,200,.30),transparent 55%),radial-gradient(rgba(150,200,255,.09) 1px,transparent 1.5px) 0 0/26px 26px,linear-gradient(160deg,#07122e,#050b1f 70%);background-attachment:fixed;color:var(--text);font-family:Rajdhani,system-ui,sans-serif;font-size:18px;line-height:1.4;overflow-x:hidden;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+canvas#fx{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:50}
 main{position:relative;z-index:1;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:76px 16px 24px}
 .hidden{display:none!important}
 h1,h2,h3{font-family:Orbitron,sans-serif;letter-spacing:.04em}
@@ -78,7 +77,7 @@ input:focus{border-color:var(--cyan);box-shadow:0 0 12px rgba(0,240,255,.5);outl
 </style>
 </head>
 <body>
-<canvas id="bolts"></canvas><canvas id="fx"></canvas>
+<canvas id="fx"></canvas>
 <div class="topbar-fixed">
   <button class="topbtn hidden" id="topBtn">⚡ Back to Main Website</button>
   <div class="madeby">MADE BY ZAIN</div>
@@ -151,7 +150,6 @@ const BUCKET = "picnic-gallery", FOLDER = "teacher-invitations";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const $ = id => document.getElementById(id);
 const show = id => { ["loading","invite","invalid","admin"].forEach(s => $(s).classList.toggle("hidden", s !== id)); };
-const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 function toast(t, bad){ const d=document.createElement("div"); d.className="toast"+(bad?" bad":""); d.textContent=t; document.body.appendChild(d); setTimeout(()=>d.remove(),2800); }
 function cleanUrl(u){ try{ const x=new URL((u||"").trim()); return /^https?:$/.test(x.protocol)?x.href:null; }catch{ return null; } }
@@ -159,18 +157,10 @@ function makeToken(){ const a=new Uint8Array(24); crypto.getRandomValues(a); ret
 const linkFor = t => location.origin + location.pathname + "?invite=" + encodeURIComponent(t);
 async function copy(t){ try{ await navigator.clipboard.writeText(t); toast("Link copied"); }catch{ prompt("Copy this link:", t); } }
 
-/* ====== Lightning background ====== */
-const bc=$("bolts"), bx=bc.getContext("2d"); let W,H,bolts=[];
-function size(){ W=bc.width=innerWidth; H=bc.height=innerHeight; for(const c of [$("fx")]){c.width=W;c.height=H;} }
+/* ====== Canvas size (confetti) ====== */
+let W,H; const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+function size(){ W=$("fx").width=innerWidth; H=$("fx").height=innerHeight; }
 addEventListener("resize",size); size();
-function newBolt(){ let x=Math.random()*W,y=0,pts=[[x,y]]; while(y<H*(.5+Math.random()*.5)){ x+=(Math.random()-.5)*70; y+=18+Math.random()*30; pts.push([x,y]); } bolts.push({pts,life:1}); }
-function drawBolts(){ bx.clearRect(0,0,W,H);
-  if(Math.random()<.025) newBolt();
-  bolts=bolts.filter(b=>b.life>0);
-  for(const b of bolts){ bx.beginPath(); b.pts.forEach((p,i)=>i?bx.lineTo(p[0],p[1]):bx.moveTo(p[0],p[1]));
-    bx.strokeStyle=`rgba(120,240,255,${b.life})`; bx.lineWidth=2; bx.shadowColor="#00f0ff"; bx.shadowBlur=18; bx.stroke(); b.life-=.04; }
-  requestAnimationFrame(drawBolts); }
-if(!reduce) drawBolts();
 
 /* ====== Confetti + party poppers ====== */
 const fx=$("fx").getContext("2d"); let parts=[],fxOn=false;
