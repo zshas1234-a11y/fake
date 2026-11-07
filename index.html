@@ -41,6 +41,7 @@ input:focus{border-color:var(--cyan);box-shadow:0 0 12px rgba(0,240,255,.5);outl
 .madeby{margin-left:auto;font:900 .85rem Orbitron,sans-serif;letter-spacing:.08em;color:#fff;padding:8px 14px;border-radius:10px;background:rgba(10,30,80,.75);border:1px solid var(--cyan);text-shadow:0 0 10px var(--cyan);box-shadow:0 0 16px rgba(0,240,255,.6);animation:glow 2.4s ease-in-out infinite}
 @keyframes glow{50%{box-shadow:0 0 28px rgba(0,240,255,1)}}
 @media (max-width:420px){.topbtn{font-size:.9rem;padding:9px 14px}.madeby{font-size:.72rem;padding:7px 10px}}
+.chk{display:flex;align-items:center;gap:10px;color:var(--text);cursor:pointer}.chk input{width:22px;height:22px;accent-color:var(--cyan)}
 /* loader */
 .loader{width:70px;height:70px;border-radius:50%;border:4px solid rgba(0,240,255,.15);border-top-color:var(--cyan);animation:spin 1s linear infinite;box-shadow:0 0 24px var(--cyan)}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -119,6 +120,7 @@ input:focus{border-color:var(--cyan);box-shadow:0 0 12px rgba(0,240,255,.5);outl
         <label for="cName">Teacher name</label><input type="text" id="cName" maxlength="120">
         <label for="cImg">Invitation card image</label><input type="file" id="cImg" accept="image/png,image/jpeg,image/webp">
         <label for="cUrl">Main website URL</label><input type="url" id="cUrl" placeholder="https://YOUR-MAIN-PICNIC-WEBSITE.vercel.app">
+        <label class="chk"><input type="checkbox" id="cBack" checked> Show "Back to Website" button on this invitation</label>
         <button class="btn" id="cBtn" style="margin-top:18px">Generate invitation link</button>
         <div class="msg" id="cMsg"></div>
         <div class="linkbox hidden" id="cLink"><div id="cLinkText"></div><button class="btn sm" id="cCopy" style="margin-top:10px">Copy invitation link</button></div>
@@ -135,6 +137,7 @@ input:focus{border-color:var(--cyan);box-shadow:0 0 12px rgba(0,240,255,.5);outl
     <h3 style="color:var(--cyan)">Edit invitation</h3>
     <label for="eName">Teacher name</label><input type="text" id="eName" maxlength="120">
     <label for="eUrl">Main website URL</label><input type="url" id="eUrl">
+    <label class="chk"><input type="checkbox" id="eBack"> Show "Back to Website" button on this invitation</label>
     <label for="eImg">Replace image (optional)</label><input type="file" id="eImg" accept="image/png,image/jpeg,image/webp">
     <div class="row" style="margin-top:18px"><button class="btn" id="eSave">Save changes</button><button class="btn ghost" id="eCancel">Cancel</button></div>
     <div class="msg bad" id="eMsg"></div>
@@ -189,7 +192,9 @@ async function showInvite(token){
   const goMain=()=>{ const u=cleanUrl(row.main_website_url)||cleanUrl(DEFAULT_MAIN_URL);
     if(!u){ $("backErr").textContent="The website link is not set for this invitation. Please contact the organizer."; return; }
     location.href=u; };
-  $("backBtn").onclick=goMain; $("topBtn").onclick=goMain; $("topBtn").classList.remove("hidden");
+  const showBack=row.show_back_button!==false;
+  $("backBtn").onclick=goMain; $("topBtn").onclick=goMain;
+  $("topBtn").classList.toggle("hidden",!showBack); $("backBtn").classList.toggle("hidden",!showBack);
   show("invite"); party();
 }
 
@@ -219,19 +224,19 @@ function pathFromUrl(u){ const m=(u||"").split(`/${BUCKET}/`); return m[1]?decod
 async function removeImage(u){ const p=pathFromUrl(u); if(p) await sb.storage.from(BUCKET).remove([p]); }
 
 $("cBtn").onclick=async()=>{
-  const name=$("cName").value.trim(), file=$("cImg").files[0], url=cleanUrl($("cUrl").value), m=$("cMsg");
+  const name=$("cName").value.trim(), file=$("cImg").files[0], url=cleanUrl($("cUrl").value), showBack=$("cBack").checked, m=$("cMsg");
   m.className="msg bad";
   if(!name){ m.textContent="Enter the teacher's name."; return; }
   const ie=validImage(file); if(ie){ m.textContent=ie; return; }
-  if(!url){ m.textContent="Enter a valid Main Website URL starting with https://"; return; }
+  if(showBack && !url){ m.textContent="Enter a valid Main Website URL starting with https://, or turn off the Back to Website button."; return; }
   $("cBtn").disabled=true; m.className="msg"; m.textContent="Uploading…";
   try{
     const token=makeToken(), image_url=await upload(file,token);
-    const {error}=await sb.from("teacher_invitations").insert({teacher_name:name,token,image_url,main_website_url:url,active:true});
+    const {error}=await sb.from("teacher_invitations").insert({teacher_name:name,token,image_url,main_website_url:url,show_back_button:showBack,active:true});
     if(error){ await removeImage(image_url); throw error; }
     m.className="msg ok"; m.textContent="Invitation created.";
     const l=linkFor(token); $("cLinkText").textContent=l; $("cLink").classList.remove("hidden"); $("cCopy").onclick=()=>copy(l);
-    $("cName").value=""; $("cImg").value=""; $("cUrl").value=DEFAULT_MAIN_URL; loadList();
+    $("cName").value=""; $("cImg").value=""; $("cUrl").value=DEFAULT_MAIN_URL; $("cBack").checked=true; loadList();
   }catch(e){ m.className="msg bad"; m.textContent="Could not save: "+(e.message||e); }
   $("cBtn").disabled=false; };
 
@@ -246,11 +251,12 @@ async function loadList(){
     const h=document.createElement("h3"); h.textContent=r.teacher_name;
     const st=document.createElement("span"); st.className="pill "+(r.active?"on":"off"); st.textContent=r.active?"Active":"Inactive";
     const d=document.createElement("div"); d.className="small"; d.textContent="Created "+new Date(r.created_at).toLocaleString();
-    const w=document.createElement("div"); w.className="small"; w.textContent=r.main_website_url||"No website URL set";
+    const w=document.createElement("div"); w.className="small"; w.textContent=(r.show_back_button===false?"Back button: OFF":"Back button: ON")+" · "+(r.main_website_url||"No website URL set");
     const row=document.createElement("div"); row.className="row";
     const b=(t,cls,fn)=>{ const x=document.createElement("button"); x.className="btn sm "+cls; x.textContent=t; x.onclick=fn; row.appendChild(x); };
     b("Copy link","",()=>copy(linkFor(r.token)));
     b("Edit","ghost",()=>openEdit(r));
+    b(r.show_back_button===false?"Turn back button ON":"Turn back button OFF","ghost",async()=>{ const {error}=await sb.from("teacher_invitations").update({show_back_button:r.show_back_button===false}).eq("id",r.id); if(error) toast(error.message,true); else { toast("Saved"); loadList(); } });
     b(r.active?"Deactivate":"Activate","warn",async()=>{ const {error}=await sb.from("teacher_invitations").update({active:!r.active}).eq("id",r.id); if(error) toast(error.message,true); else { toast(r.active?"Deactivated":"Activated"); loadList(); } });
     b("Delete","danger",async()=>{ if(!confirm(`Delete the invitation for ${r.teacher_name}? The link will stop working.`)) return;
       const {error}=await sb.from("teacher_invitations").delete().eq("id",r.id);
@@ -259,16 +265,17 @@ async function loadList(){
   }
 }
 
-function openEdit(r){ editing=r; $("eName").value=r.teacher_name; $("eUrl").value=r.main_website_url||""; $("eImg").value=""; $("eMsg").textContent=""; $("modal").classList.remove("hidden"); $("eName").focus(); }
+function openEdit(r){ editing=r; $("eName").value=r.teacher_name; $("eUrl").value=r.main_website_url||""; $("eBack").checked=r.show_back_button!==false; $("eImg").value=""; $("eMsg").textContent=""; $("modal").classList.remove("hidden"); $("eName").focus(); }
 $("eCancel").onclick=()=>$("modal").classList.add("hidden");
 $("eSave").onclick=async()=>{
   const name=$("eName").value.trim(), url=cleanUrl($("eUrl").value), file=$("eImg").files[0], m=$("eMsg");
   if(!name){ m.textContent="Enter the teacher's name."; return; }
-  if(!url){ m.textContent="Enter a valid URL starting with https://"; return; }
+  const back=$("eBack").checked;
+  if(back && !url){ m.textContent="Enter a valid URL starting with https://, or turn off the Back to Website button."; return; }
   if(file){ const ie=validImage(file); if(ie){ m.textContent=ie; return; } }
   $("eSave").disabled=true; m.textContent="";
   try{
-    const patch={teacher_name:name,main_website_url:url}; let old=null;
+    const patch={teacher_name:name,main_website_url:url,show_back_button:back}; let old=null;
     if(file){ patch.image_url=await upload(file,editing.token); old=editing.image_url; }
     const {error}=await sb.from("teacher_invitations").update(patch).eq("id",editing.id);
     if(error) throw error;
