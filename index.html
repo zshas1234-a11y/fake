@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Teacher Invitation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<style>
+:root{--navy:#050b1f;--navy2:#0a1633;--blue:#1e6bff;--cyan:#00f0ff;--text:#e8f4ff;--mute:#8fa8c9;--bad:#ff4d6d;--ok:#2dffb0}
+*{box-sizing:border-box;margin:0}
+html,body{min-height:100%}
+body{background:radial-gradient(ellipse at 50% 0%,#0c2150 0%,var(--navy) 60%);color:var(--text);font-family:Rajdhani,system-ui,sans-serif;font-size:18px;line-height:1.4;overflow-x:hidden;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+canvas#bolts,canvas#fx{position:fixed;inset:0;width:100%;height:100%;pointer-events:none}
+canvas#bolts{z-index:0}canvas#fx{z-index:50}
+main{position:relative;z-index:1;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:76px 16px 24px}
+.hidden{display:none!important}
+h1,h2,h3{font-family:Orbitron,sans-serif;letter-spacing:.04em}
+.glass{background:linear-gradient(145deg,rgba(20,45,100,.55),rgba(8,18,45,.7));backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid rgba(0,240,255,.35);border-radius:20px;box-shadow:0 0 22px rgba(30,107,255,.35),inset 0 0 30px rgba(0,240,255,.06);padding:24px;width:100%}
+.btn{font:700 1.05rem Rajdhani,sans-serif;letter-spacing:.06em;color:#001322;background:linear-gradient(135deg,var(--cyan),var(--blue));border:0;border-radius:12px;padding:12px 20px;cursor:pointer;box-shadow:0 0 16px rgba(0,240,255,.55),0 5px 0 #0a3d99;transition:transform .15s,box-shadow .15s}
+.btn:hover{transform:translateY(-2px);box-shadow:0 0 28px rgba(0,240,255,.9),0 7px 0 #0a3d99}
+.btn:active{transform:translateY(3px);box-shadow:0 0 12px rgba(0,240,255,.6),0 2px 0 #0a3d99}
+.btn:disabled{opacity:.5;cursor:wait}
+.btn.ghost{background:transparent;color:var(--cyan);border:1px solid var(--cyan);box-shadow:none}
+.btn.warn{background:linear-gradient(135deg,#ffb44d,#ff6b3d);box-shadow:0 4px 0 #8a3a10}
+.btn.danger{background:linear-gradient(135deg,#ff6b8a,var(--bad));color:#fff;box-shadow:0 4px 0 #7a1630}
+.btn.sm{padding:7px 12px;font-size:.92rem;box-shadow:none}
+:focus-visible{outline:3px solid var(--cyan);outline-offset:2px}
+label{display:block;margin:14px 0 6px;color:var(--mute);font-weight:600}
+input[type=text],input[type=url],input[type=email],input[type=password],input[type=file]{width:100%;font:600 1rem Rajdhani,sans-serif;color:var(--text);background:rgba(3,8,24,.7);border:1px solid rgba(0,240,255,.3);border-radius:10px;padding:12px}
+input:focus{border-color:var(--cyan);box-shadow:0 0 12px rgba(0,240,255,.5);outline:0}
+.msg{margin-top:12px;font-weight:600}.msg.bad{color:var(--bad)}.msg.ok{color:var(--ok)}
+/* top bar */
+.topbar-fixed{position:fixed;top:env(safe-area-inset-top);left:0;right:0;z-index:30;display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 12px;pointer-events:none}
+.topbar-fixed>*{pointer-events:auto}
+.topbtn{font:700 1rem Rajdhani,sans-serif;letter-spacing:.04em;color:#001322;background:linear-gradient(135deg,var(--cyan),var(--blue));border:0;border-radius:999px;padding:10px 18px;cursor:pointer;box-shadow:0 0 18px rgba(0,240,255,.8),0 0 0 2px rgba(255,255,255,.25) inset;transition:transform .15s,box-shadow .15s}
+.topbtn:hover{transform:translateY(-2px);box-shadow:0 0 30px rgba(0,240,255,1)}
+.madeby{margin-left:auto;font:900 .85rem Orbitron,sans-serif;letter-spacing:.08em;color:#fff;padding:8px 14px;border-radius:10px;background:rgba(10,30,80,.75);border:1px solid var(--cyan);text-shadow:0 0 10px var(--cyan);box-shadow:0 0 16px rgba(0,240,255,.6);animation:glow 2.4s ease-in-out infinite}
+@keyframes glow{50%{box-shadow:0 0 28px rgba(0,240,255,1)}}
+@media (max-width:420px){.topbtn{font-size:.9rem;padding:9px 14px}.madeby{font-size:.72rem;padding:7px 10px}}
+/* loader */
+.loader{width:70px;height:70px;border-radius:50%;border:4px solid rgba(0,240,255,.15);border-top-color:var(--cyan);animation:spin 1s linear infinite;box-shadow:0 0 24px var(--cyan)}
+@keyframes spin{to{transform:rotate(360deg)}}
+/* invitation */
+#invite{max-width:640px;text-align:center}
+.inv-head{font-size:clamp(1.5rem,6.5vw,3rem);line-height:1.15;color:#fff;text-shadow:0 1px 0 #1e6bff,0 2px 0 #1857d1,0 3px 0 #1245a8,0 4px 0 #0e3685,0 8px 18px rgba(0,0,0,.6),0 0 28px var(--cyan);transform:perspective(600px) rotateX(10deg);animation:drop 1s cubic-bezier(.2,1.4,.4,1) both}
+.inv-name{font:900 clamp(1.8rem,8vw,3.4rem) Orbitron,sans-serif;margin:14px 0 22px;color:var(--cyan);text-shadow:0 0 14px var(--cyan),0 0 40px var(--blue);word-break:break-word;animation:drop 1s .25s cubic-bezier(.2,1.4,.4,1) both}
+.frame{position:relative;padding:4px;border-radius:22px;background:conic-gradient(from var(--a,0deg),var(--cyan),var(--blue),#fff,var(--cyan));animation:rot 4s linear infinite,pop 1s .5s both;box-shadow:0 0 36px rgba(0,240,255,.6)}
+@property --a{syntax:'<angle>';initial-value:0deg;inherits:false}
+@keyframes rot{to{--a:360deg}}
+.frame img{display:block;width:100%;max-height:70vh;object-fit:contain;border-radius:18px;background:#030818}
+@keyframes drop{from{opacity:0;transform:perspective(600px) translateY(-40px) rotateX(60deg)}}
+@keyframes pop{from{opacity:0;transform:scale(.7)}}
+.back{display:inline-block;margin-top:28px;font-size:1.3rem;padding:16px 34px;animation:pulse 1.8s ease-in-out infinite}
+@keyframes pulse{50%{box-shadow:0 0 38px rgba(0,240,255,1),0 5px 0 #0a3d99}}
+/* admin */
+#admin{max-width:980px;align-self:stretch;margin:0 auto;justify-content:flex-start}
+#login{max-width:420px}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:18px}
+.topbar h2{font-size:clamp(1.1rem,4vw,1.6rem);color:var(--cyan);text-shadow:0 0 14px var(--cyan)}
+.grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));margin-top:16px}
+.card{padding:14px;display:flex;flex-direction:column;gap:8px}
+.card img{width:100%;height:170px;object-fit:cover;border-radius:12px;background:#030818}
+.card h3{font-size:1.05rem;word-break:break-word}
+.pill{font-size:.85rem;font-weight:700;padding:2px 10px;border-radius:99px;width:fit-content}
+.pill.on{background:rgba(45,255,176,.15);color:var(--ok)}.pill.off{background:rgba(255,77,109,.15);color:var(--bad)}
+.row{display:flex;gap:6px;flex-wrap:wrap}
+.small{color:var(--mute);font-size:.9rem;word-break:break-all}
+.linkbox{margin-top:14px;padding:12px;border:1px dashed var(--cyan);border-radius:12px;word-break:break-all}
+.modal{position:fixed;inset:0;z-index:20;background:rgba(2,6,18,.8);display:flex;align-items:center;justify-content:center;padding:16px;overflow:auto}
+.modal .glass{max-width:460px}
+.toast{position:fixed;bottom:calc(20px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);z-index:60;padding:12px 20px;border-radius:12px;background:#0a1d44;border:1px solid var(--cyan);box-shadow:0 0 20px rgba(0,240,255,.5);font-weight:700}
+.toast.bad{border-color:var(--bad)}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01s!important;animation-iteration-count:1!important}}
+</style>
+</head>
+<body>
+<canvas id="bolts"></canvas><canvas id="fx"></canvas>
+<div class="topbar-fixed">
+  <button class="topbtn hidden" id="topBtn">⚡ Back to Main Website</button>
+  <div class="madeby">MADE BY ZAIN</div>
+</div>
+<main>
+  <div id="loading"><div class="loader" role="status" aria-label="Loading"></div></div>
+
+  <!-- Teacher invitation -->
+  <section id="invite" class="hidden">
+    <h1 class="inv-head">YOU ARE SPECIALLY INVITED!</h1>
+    <div class="inv-name" id="invName"></div>
+    <div class="frame"><img id="invImg" alt="Invitation card"></div>
+    <button class="btn back" id="backBtn">⚡ BACK TO WEBSITE</button>
+    <div class="msg bad" id="backErr"></div>
+  </section>
+
+  <!-- Invalid -->
+  <section id="invalid" class="glass hidden" style="max-width:480px;text-align:center">
+    <h2 style="color:var(--bad);margin-bottom:10px">Invitation unavailable</h2>
+    <p>This invitation link is invalid or no longer active.</p>
+  </section>
+
+  <!-- Admin -->
+  <section id="admin" class="hidden">
+    <div id="login" class="glass hidden" style="margin:auto">
+      <h2 style="color:var(--cyan);margin-bottom:6px">Admin login</h2>
+      <p class="small">Sign in to manage teacher invitations.</p>
+      <label for="email">Email</label><input type="email" id="email" autocomplete="username">
+      <label for="pass">Password</label><input type="password" id="pass" autocomplete="current-password">
+      <button class="btn" id="loginBtn" style="margin-top:18px;width:100%">Sign in</button>
+      <div class="msg bad" id="loginMsg"></div>
+    </div>
+
+    <div id="dash" class="hidden">
+      <div class="topbar"><h2>⚡ Invitation dashboard</h2><button class="btn ghost sm" id="logout">Sign out</button></div>
+      <div class="glass">
+        <h3 style="margin-bottom:4px">Create new teacher invitation</h3>
+        <label for="cName">Teacher name</label><input type="text" id="cName" maxlength="120">
+        <label for="cImg">Invitation card image</label><input type="file" id="cImg" accept="image/png,image/jpeg,image/webp">
+        <label for="cUrl">Main website URL</label><input type="url" id="cUrl" placeholder="https://YOUR-MAIN-PICNIC-WEBSITE.vercel.app">
+        <button class="btn" id="cBtn" style="margin-top:18px">Generate invitation link</button>
+        <div class="msg" id="cMsg"></div>
+        <div class="linkbox hidden" id="cLink"><div id="cLinkText"></div><button class="btn sm" id="cCopy" style="margin-top:10px">Copy invitation link</button></div>
+      </div>
+      <h3 style="margin-top:26px">All invitations</h3>
+      <div class="grid" id="list"></div>
+      <p class="small" id="empty" style="margin-top:12px"></p>
+    </div>
+  </section>
+</main>
+
+<div class="modal hidden" id="modal">
+  <div class="glass" role="dialog" aria-modal="true" aria-label="Edit invitation">
+    <h3 style="color:var(--cyan)">Edit invitation</h3>
+    <label for="eName">Teacher name</label><input type="text" id="eName" maxlength="120">
+    <label for="eUrl">Main website URL</label><input type="url" id="eUrl">
+    <label for="eImg">Replace image (optional)</label><input type="file" id="eImg" accept="image/png,image/jpeg,image/webp">
+    <div class="row" style="margin-top:18px"><button class="btn" id="eSave">Save changes</button><button class="btn ghost" id="eCancel">Cancel</button></div>
+    <div class="msg bad" id="eMsg"></div>
+  </div>
+</div>
+
+<script>
+/* ====== CONFIG: paste your values (anon / publishable key ONLY, never service_role) ====== */
+const SUPABASE_URL = "https://yzcycwogydknngawgovp.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_9yfxnK8d0GtJWeWd4_DfzQ_nk1mPIav";
+const DEFAULT_MAIN_URL = "https://collection-for-picnik2026.vercel.app/"; // used if an invitation has no URL saved
+const BUCKET = "picnic-gallery", FOLDER = "teacher-invitations";
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const $ = id => document.getElementById(id);
+const show = id => { ["loading","invite","invalid","admin"].forEach(s => $(s).classList.toggle("hidden", s !== id)); };
+const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+function toast(t, bad){ const d=document.createElement("div"); d.className="toast"+(bad?" bad":""); d.textContent=t; document.body.appendChild(d); setTimeout(()=>d.remove(),2800); }
+function cleanUrl(u){ try{ const x=new URL((u||"").trim()); return /^https?:$/.test(x.protocol)?x.href:null; }catch{ return null; } }
+function makeToken(){ const a=new Uint8Array(24); crypto.getRandomValues(a); return btoa(String.fromCharCode(...a)).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,""); }
+const linkFor = t => location.origin + location.pathname + "?invite=" + encodeURIComponent(t);
+async function copy(t){ try{ await navigator.clipboard.writeText(t); toast("Link copied"); }catch{ prompt("Copy this link:", t); } }
+
+/* ====== Lightning background ====== */
+const bc=$("bolts"), bx=bc.getContext("2d"); let W,H,bolts=[];
+function size(){ W=bc.width=innerWidth; H=bc.height=innerHeight; for(const c of [$("fx")]){c.width=W;c.height=H;} }
+addEventListener("resize",size); size();
+function newBolt(){ let x=Math.random()*W,y=0,pts=[[x,y]]; while(y<H*(.5+Math.random()*.5)){ x+=(Math.random()-.5)*70; y+=18+Math.random()*30; pts.push([x,y]); } bolts.push({pts,life:1}); }
+function drawBolts(){ bx.clearRect(0,0,W,H);
+  if(Math.random()<.025) newBolt();
+  bolts=bolts.filter(b=>b.life>0);
+  for(const b of bolts){ bx.beginPath(); b.pts.forEach((p,i)=>i?bx.lineTo(p[0],p[1]):bx.moveTo(p[0],p[1]));
+    bx.strokeStyle=`rgba(120,240,255,${b.life})`; bx.lineWidth=2; bx.shadowColor="#00f0ff"; bx.shadowBlur=18; bx.stroke(); b.life-=.04; }
+  requestAnimationFrame(drawBolts); }
+if(!reduce) drawBolts();
+
+/* ====== Confetti + party poppers ====== */
+const fx=$("fx").getContext("2d"); let parts=[],fxOn=false;
+function burst(x,y,ang,n){ const cols=["#00f0ff","#1e6bff","#ffffff","#ffd84d","#ff5fa2","#2dffb0"];
+  for(let i=0;i<n;i++){ const a=ang+(Math.random()-.5)*1.1, s=8+Math.random()*14;
+    parts.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,w:6+Math.random()*6,h:4+Math.random()*6,r:Math.random()*6,vr:(Math.random()-.5)*.4,c:cols[i%cols.length],life:140+Math.random()*60}); }
+  if(!fxOn){fxOn=true;tick();} }
+function tick(){ fx.clearRect(0,0,W,H);
+  parts=parts.filter(p=>p.life>0&&p.y<H+30);
+  for(const p of parts){ p.vy+=.35; p.vx*=.99; p.x+=p.vx; p.y+=p.vy; p.r+=p.vr; p.life--;
+    fx.save(); fx.translate(p.x,p.y); fx.rotate(p.r); fx.fillStyle=p.c; fx.globalAlpha=Math.min(1,p.life/40); fx.fillRect(-p.w/2,-p.h/2,p.w,p.h); fx.restore(); }
+  if(parts.length) requestAnimationFrame(tick); else fxOn=false; }
+function party(){ if(reduce) return;
+  const go=()=>{ burst(0,H,-1.0,90); burst(W,H,-Math.PI+1.0,90); burst(W/2,H,-Math.PI/2,70); };
+  go(); setTimeout(go,900); setTimeout(go,2000); }
+
+/* ====== Teacher invitation page ====== */
+async function showInvite(token){
+  show("loading"); $("topBtn").classList.add("hidden");
+  const {data,error}=await sb.rpc("get_invitation",{p_token:token});
+  const row=Array.isArray(data)?data[0]:data;
+  if(error||!row){ show("invalid"); return; }
+  $("invName").textContent=row.teacher_name;
+  const img=$("invImg"); img.onerror=()=>img.closest(".frame").classList.add("hidden"); img.src=row.image_url||"";
+  const goMain=()=>{ const u=cleanUrl(row.main_website_url)||cleanUrl(DEFAULT_MAIN_URL);
+    if(!u){ $("backErr").textContent="The website link is not set for this invitation. Please contact the organizer."; return; }
+    location.href=u; };
+  $("backBtn").onclick=goMain; $("topBtn").onclick=goMain; $("topBtn").classList.remove("hidden");
+  show("invite"); party();
+}
+
+/* ====== Admin ====== */
+let editing=null;
+async function isAdmin(){ const {data,error}=await sb.rpc("is_invitation_admin"); return !error&&data===true; }
+async function showAdmin(){
+  show("admin");
+  const {data:{session}}=await sb.auth.getSession();
+  if(session && await isAdmin()){ $("login").classList.add("hidden"); $("dash").classList.remove("hidden"); loadList(); }
+  else { if(session){ await sb.auth.signOut(); $("loginMsg").textContent="This account is not an authorized admin."; } $("dash").classList.add("hidden"); $("login").classList.remove("hidden"); }
+}
+$("loginBtn").onclick=async()=>{ $("loginMsg").textContent="";
+  const {error}=await sb.auth.signInWithPassword({email:$("email").value.trim(),password:$("pass").value});
+  if(error){ $("loginMsg").textContent="Login failed. Check your email and password."; return; }
+  $("pass").value=""; showAdmin(); };
+$("pass").addEventListener("keydown",e=>{ if(e.key==="Enter") $("loginBtn").click(); });
+$("logout").onclick=async()=>{ await sb.auth.signOut(); showAdmin(); };
+
+function validImage(f){ if(!f) return "Choose an invitation image."; if(!/^image\/(png|jpeg|webp)$/.test(f.type)) return "Image must be PNG, JPG or WebP."; if(f.size>8*1024*1024) return "Image must be under 8 MB."; return null; }
+async function upload(file,token){ const ext={"image/png":"png","image/jpeg":"jpg","image/webp":"webp"}[file.type];
+  const path=`${FOLDER}/${token}-${Date.now()}.${ext}`;
+  const {error}=await sb.storage.from(BUCKET).upload(path,file,{contentType:file.type,upsert:false});
+  if(error) throw error;
+  return sb.storage.from(BUCKET).getPublicUrl(path).data.publicUrl; }
+function pathFromUrl(u){ const m=(u||"").split(`/${BUCKET}/`); return m[1]?decodeURIComponent(m[1].split("?")[0]):null; }
+async function removeImage(u){ const p=pathFromUrl(u); if(p) await sb.storage.from(BUCKET).remove([p]); }
+
+$("cBtn").onclick=async()=>{
+  const name=$("cName").value.trim(), file=$("cImg").files[0], url=cleanUrl($("cUrl").value), m=$("cMsg");
+  m.className="msg bad";
+  if(!name){ m.textContent="Enter the teacher's name."; return; }
+  const ie=validImage(file); if(ie){ m.textContent=ie; return; }
+  if(!url){ m.textContent="Enter a valid Main Website URL starting with https://"; return; }
+  $("cBtn").disabled=true; m.className="msg"; m.textContent="Uploading…";
+  try{
+    const token=makeToken(), image_url=await upload(file,token);
+    const {error}=await sb.from("teacher_invitations").insert({teacher_name:name,token,image_url,main_website_url:url,active:true});
+    if(error){ await removeImage(image_url); throw error; }
+    m.className="msg ok"; m.textContent="Invitation created.";
+    const l=linkFor(token); $("cLinkText").textContent=l; $("cLink").classList.remove("hidden"); $("cCopy").onclick=()=>copy(l);
+    $("cName").value=""; $("cImg").value=""; $("cUrl").value=DEFAULT_MAIN_URL; loadList();
+  }catch(e){ m.className="msg bad"; m.textContent="Could not save: "+(e.message||e); }
+  $("cBtn").disabled=false; };
+
+async function loadList(){
+  const {data,error}=await sb.from("teacher_invitations").select("*").order("created_at",{ascending:false});
+  const list=$("list"); list.replaceChildren();
+  if(error){ $("empty").textContent="Could not load invitations: "+error.message; return; }
+  $("empty").textContent=data.length?"":"No invitations yet. Create the first one above.";
+  for(const r of data){
+    const c=document.createElement("div"); c.className="glass card";
+    const im=document.createElement("img"); im.src=r.image_url||""; im.alt="Invitation preview"; im.loading="lazy";
+    const h=document.createElement("h3"); h.textContent=r.teacher_name;
+    const st=document.createElement("span"); st.className="pill "+(r.active?"on":"off"); st.textContent=r.active?"Active":"Inactive";
+    const d=document.createElement("div"); d.className="small"; d.textContent="Created "+new Date(r.created_at).toLocaleString();
+    const w=document.createElement("div"); w.className="small"; w.textContent=r.main_website_url||"No website URL set";
+    const row=document.createElement("div"); row.className="row";
+    const b=(t,cls,fn)=>{ const x=document.createElement("button"); x.className="btn sm "+cls; x.textContent=t; x.onclick=fn; row.appendChild(x); };
+    b("Copy link","",()=>copy(linkFor(r.token)));
+    b("Edit","ghost",()=>openEdit(r));
+    b(r.active?"Deactivate":"Activate","warn",async()=>{ const {error}=await sb.from("teacher_invitations").update({active:!r.active}).eq("id",r.id); if(error) toast(error.message,true); else { toast(r.active?"Deactivated":"Activated"); loadList(); } });
+    b("Delete","danger",async()=>{ if(!confirm(`Delete the invitation for ${r.teacher_name}? The link will stop working.`)) return;
+      const {error}=await sb.from("teacher_invitations").delete().eq("id",r.id);
+      if(error){ toast(error.message,true); return; } await removeImage(r.image_url); toast("Deleted"); loadList(); });
+    c.append(im,h,st,d,w,row); list.appendChild(c);
+  }
+}
+
+function openEdit(r){ editing=r; $("eName").value=r.teacher_name; $("eUrl").value=r.main_website_url||""; $("eImg").value=""; $("eMsg").textContent=""; $("modal").classList.remove("hidden"); $("eName").focus(); }
+$("eCancel").onclick=()=>$("modal").classList.add("hidden");
+$("eSave").onclick=async()=>{
+  const name=$("eName").value.trim(), url=cleanUrl($("eUrl").value), file=$("eImg").files[0], m=$("eMsg");
+  if(!name){ m.textContent="Enter the teacher's name."; return; }
+  if(!url){ m.textContent="Enter a valid URL starting with https://"; return; }
+  if(file){ const ie=validImage(file); if(ie){ m.textContent=ie; return; } }
+  $("eSave").disabled=true; m.textContent="";
+  try{
+    const patch={teacher_name:name,main_website_url:url}; let old=null;
+    if(file){ patch.image_url=await upload(file,editing.token); old=editing.image_url; }
+    const {error}=await sb.from("teacher_invitations").update(patch).eq("id",editing.id);
+    if(error) throw error;
+    if(old) await removeImage(old);
+    $("modal").classList.add("hidden"); toast("Saved"); loadList();
+  }catch(e){ m.textContent="Could not save: "+(e.message||e); }
+  $("eSave").disabled=false; };
+
+/* ====== Start ====== */
+(function(){
+  if(SUPABASE_URL.startsWith("YOUR_")){ show("invalid"); $("invalid").querySelector("p").textContent="Set SUPABASE_URL and SUPABASE_ANON_KEY at the top of the script in index.html."; return; }
+  $("cUrl").value=DEFAULT_MAIN_URL;
+  const t=new URLSearchParams(location.search).get("invite");
+  if(t) showInvite(t.trim()); else showAdmin();
+})();
+</script>
+</body>
+</html>
