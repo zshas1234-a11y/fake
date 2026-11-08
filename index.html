@@ -8,7 +8,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script>window.supabase||document.write('<script src="https://unpkg.com/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"><\/script>')</script>
 <style>
 :root{--navy:#050b1f;--navy2:#0a1633;--blue:#1e6bff;--cyan:#00f0ff;--text:#e8f4ff;--mute:#8fa8c9;--bad:#ff4d6d;--ok:#2dffb0}
 *{box-sizing:border-box;margin:0}
@@ -172,9 +173,16 @@ const SUPABASE_ANON_KEY = "sb_publishable_9yfxnK8d0GtJWeWd4_DfzQ_nk1mPIav";
 const DEFAULT_MAIN_URL = "https://collection-for-picnik2026.vercel.app/"; // used if an invitation has no URL saved
 const BUCKET = "picnic-gallery", FOLDER = "teacher-invitations";
 
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const $ = id => document.getElementById(id);
 const show = id => { ["loading","invite","invalid","admin"].forEach(s => $(s).classList.toggle("hidden", s !== id)); };
+const stillLoading = () => !$("loading").classList.contains("hidden");
+function fail(msg){ if(!stillLoading()) return; show("invalid"); $("invalid").querySelector("h2").textContent="Something went wrong"; $("invalid").querySelector("p").textContent=msg; }
+addEventListener("error",e=>fail("Error: "+(e.message||"unknown")));
+addEventListener("unhandledrejection",e=>fail("Error: "+((e.reason&&e.reason.message)||e.reason)));
+setTimeout(()=>fail("Taking too long to connect. Check your internet connection and reload the page."),12000);
+let sb;
+try{ sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); }
+catch(e){ fail("Could not load the Supabase library. Check your internet connection and reload."); }
 
 function toast(t, bad){ const d=document.createElement("div"); d.className="toast"+(bad?" bad":""); d.textContent=t; document.body.appendChild(d); setTimeout(()=>d.remove(),2800); }
 function cleanUrl(u){ try{ const x=new URL((u||"").trim()); return /^https?:$/.test(x.protocol)?x.href:null; }catch{ return null; } }
@@ -240,4 +248,91 @@ $("logout").onclick=async()=>{ await sb.auth.signOut(); showAdmin(); };
 
 function validImage(f){ if(!f) return "Choose an invitation image."; if(!/^image\/(png|jpeg|webp)$/.test(f.type)) return "Image must be PNG, JPG or WebP."; if(f.size>8*1024*1024) return "Image must be under 8 MB."; return null; }
 async function upload(file,token,tag="card"){ const ext={"image/png":"png","image/jpeg":"jpg","image/webp":"webp"}[file.type];
-  const path=`$
+  const path=`${FOLDER}/${token}-${tag}-${Date.now()}.${ext}`;
+  const {error}=await sb.storage.from(BUCKET).upload(path,file,{contentType:file.type,upsert:false});
+  if(error) throw error;
+  return sb.storage.from(BUCKET).getPublicUrl(path).data.publicUrl; }
+function pathFromUrl(u){ const m=(u||"").split(`/${BUCKET}/`); return m[1]?decodeURIComponent(m[1].split("?")[0]):null; }
+async function removeImage(u){ const p=pathFromUrl(u); if(p) await sb.storage.from(BUCKET).remove([p]); }
+
+$("cBtn").onclick=async()=>{
+  const name=$("cName").value.trim(), file=$("cImg").files[0], url=cleanUrl($("cUrl").value), showBack=$("cBack").checked, pfile=$("cPerson").files[0], text=$("cText").value.trim(), showPerson=$("cShowPerson").checked, showText=$("cShowText").checked, m=$("cMsg");
+  m.className="msg bad";
+  if(!name){ m.textContent="Enter the teacher's name."; return; }
+  const ie=validImage(file); if(ie){ m.textContent=ie; return; }
+  if(pfile){ const pe=validImage(pfile); if(pe){ m.textContent="Person photo: "+pe; return; } }
+  if(showBack && !url){ m.textContent="Enter a valid Main Website URL starting with https://, or turn off the Back to Website button."; return; }
+  $("cBtn").disabled=true; m.className="msg"; m.textContent="Uploading…";
+  try{
+    const token=makeToken(), image_url=await upload(file,token,"card");
+    const person_image_url=pfile?await upload(pfile,token,"person"):null;
+    const {error}=await sb.from("teacher_invitations").insert({teacher_name:name,token,image_url,main_website_url:url,show_back_button:showBack,person_image_url,message_text:text||null,show_person_photo:showPerson,show_message:showText,active:true});
+    if(error){ await removeImage(image_url); await removeImage(person_image_url); throw error; }
+    m.className="msg ok"; m.textContent="Invitation created.";
+    const l=linkFor(token); $("cLinkText").textContent=l; $("cLink").classList.remove("hidden"); $("cCopy").onclick=()=>copy(l);
+    $("cName").value=""; $("cImg").value=""; $("cUrl").value=DEFAULT_MAIN_URL; $("cBack").checked=true; $("cPerson").value=""; $("cText").value=""; $("cShowPerson").checked=true; $("cShowText").checked=true; loadList();
+  }catch(e){ m.className="msg bad"; m.textContent="Could not save: "+(e.message||e); }
+  $("cBtn").disabled=false; };
+
+async function loadList(){
+  const {data,error}=await sb.from("teacher_invitations").select("*").order("created_at",{ascending:false});
+  const list=$("list"); list.replaceChildren();
+  if(error){ $("empty").textContent="Could not load invitations: "+error.message; return; }
+  $("empty").textContent=data.length?"":"No invitations yet. Create the first one above.";
+  for(const r of data){
+    const c=document.createElement("div"); c.className="glass card";
+    const im=document.createElement("img"); im.src=r.image_url||""; im.alt="Invitation preview"; im.loading="lazy";
+    const h=document.createElement("h3"); h.textContent=r.teacher_name;
+    const st=document.createElement("span"); st.className="pill "+(r.active?"on":"off"); st.textContent=r.active?"Active":"Inactive";
+    const d=document.createElement("div"); d.className="small"; d.textContent="Created "+new Date(r.created_at).toLocaleString();
+    const w=document.createElement("div"); w.className="small"; w.textContent=`Photo: ${!r.person_image_url?"none":r.show_person_photo===false?"OFF":"ON"} · Text: ${!r.message_text?"none":r.show_message===false?"OFF":"ON"} · Back button: ${r.show_back_button===false?"OFF":"ON"} · `+(r.main_website_url||"No website URL set");
+    const row=document.createElement("div"); row.className="row";
+    const b=(t,cls,fn)=>{ const x=document.createElement("button"); x.className="btn sm "+cls; x.textContent=t; x.onclick=fn; row.appendChild(x); };
+    b("Copy link","",()=>copy(linkFor(r.token)));
+    b("Edit","ghost",()=>openEdit(r));
+    b(r.show_back_button===false?"Turn back button ON":"Turn back button OFF","ghost",async()=>{ const {error}=await sb.from("teacher_invitations").update({show_back_button:r.show_back_button===false}).eq("id",r.id); if(error) toast(error.message,true); else { toast("Saved"); loadList(); } });
+    const qt=(name,col,cur)=>b("Turn "+name+(cur?" OFF":" ON"),"ghost",async()=>{ const {error}=await sb.from("teacher_invitations").update({[col]:!cur}).eq("id",r.id); if(error) toast(error.message,true); else { toast("Saved"); loadList(); } });
+    if(r.person_image_url) qt("photo","show_person_photo",r.show_person_photo!==false);
+    if(r.message_text) qt("text","show_message",r.show_message!==false);
+    b(r.active?"Deactivate":"Activate","warn",async()=>{ const {error}=await sb.from("teacher_invitations").update({active:!r.active}).eq("id",r.id); if(error) toast(error.message,true); else { toast(r.active?"Deactivated":"Activated"); loadList(); } });
+    b("Delete","danger",async()=>{ if(!confirm(`Delete the invitation for ${r.teacher_name}? The link will stop working.`)) return;
+      const {error}=await sb.from("teacher_invitations").delete().eq("id",r.id);
+      if(error){ toast(error.message,true); return; } await removeImage(r.image_url); await removeImage(r.person_image_url); toast("Deleted"); loadList(); });
+    c.append(im,h,st,d,w,row); list.appendChild(c);
+  }
+}
+
+function openEdit(r){ editing=r; $("eName").value=r.teacher_name; $("eUrl").value=r.main_website_url||""; $("eBack").checked=r.show_back_button!==false; $("eShowPerson").checked=r.show_person_photo!==false; $("eShowText").checked=r.show_message!==false; $("eText").value=r.message_text||""; $("ePerson").value=""; $("eImg").value=""; $("eMsg").textContent=""; $("modal").classList.remove("hidden"); $("eName").focus(); }
+$("eCancel").onclick=()=>$("modal").classList.add("hidden");
+$("eSave").onclick=async()=>{
+  const name=$("eName").value.trim(), url=cleanUrl($("eUrl").value), file=$("eImg").files[0], pfile=$("ePerson").files[0], text=$("eText").value.trim(), m=$("eMsg");
+  if(!name){ m.textContent="Enter the teacher's name."; return; }
+  const back=$("eBack").checked;
+  if(back && !url){ m.textContent="Enter a valid URL starting with https://, or turn off the Back to Website button."; return; }
+  if(file){ const ie=validImage(file); if(ie){ m.textContent=ie; return; } }
+  if(pfile){ const pe=validImage(pfile); if(pe){ m.textContent="Person photo: "+pe; return; } }
+  $("eSave").disabled=true; m.textContent="";
+  try{
+    const patch={teacher_name:name,main_website_url:url,show_back_button:back,message_text:text||null,show_person_photo:$("eShowPerson").checked,show_message:$("eShowText").checked}; let old=null, oldP=null;
+    if(file){ patch.image_url=await upload(file,editing.token,"card"); old=editing.image_url; }
+    if(pfile){ patch.person_image_url=await upload(pfile,editing.token,"person"); oldP=editing.person_image_url; }
+    const {error}=await sb.from("teacher_invitations").update(patch).eq("id",editing.id);
+    if(error) throw error;
+    if(old) await removeImage(old);
+    if(oldP) await removeImage(oldP);
+    $("modal").classList.add("hidden"); toast("Saved"); loadList();
+  }catch(e){ m.textContent="Could not save: "+(e.message||e); }
+  $("eSave").disabled=false; };
+
+/* ====== Start ====== */
+(function(){
+  if(SUPABASE_URL.startsWith("YOUR_")){ show("invalid"); $("invalid").querySelector("p").textContent="Set SUPABASE_URL and SUPABASE_ANON_KEY at the top of the script in index.html."; return; }
+  $("cUrl").value=DEFAULT_MAIN_URL;
+  if(!sb) return;
+  const t=new URLSearchParams(location.search).get("invite");
+  try{ if(t) showInvite(t.trim()).catch(e=>fail("Error: "+(e.message||e))); else showAdmin().catch(e=>fail("Error: "+(e.message||e))); }
+  catch(e){ fail("Error: "+(e.message||e)); }
+})();
+</script>
+</body>
+</html>
